@@ -5,6 +5,10 @@ from core.result import (make_result, STATUS_VULNERABLE,
 
 MARKER = "forge-probe-marker"
 
+NAME = "tomcat_put"
+DESCRIPTION = "Tomcat PUT"
+REFERENCE = "CVE-2017-12615, https://vulhub.org/#/environments/tomcat/CVE-2017-12615/"
+
 def check(target):
     """Tomcat PUT 任意文件写入检测(CVE-2017-12615)
     检测信号:PUT 探针文件 201 + 读回内容一致(已实测,100% 确定)。
