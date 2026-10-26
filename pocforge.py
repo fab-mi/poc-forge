@@ -5,9 +5,12 @@ import sys
 from core.report import to_markdown
 from plugins import REGISTRY
 
+__version__ = "0.1.0"
+
 
 def main():
     ap = argparse.ArgumentParser(description="PoC-Forge: 授权本地靶场漏洞验证框架")
+    ap.add_argument("--version", action="version", version=f"PoC-Forge {__version__}")
     ap.add_argument("-t", "--target", required=True,
                     help="目标,多个用逗号分隔: http://localhost:8080,http://localhost:8081")
     ap.add_argument("-p", "--plugin", required=True,

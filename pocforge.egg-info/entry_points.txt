@@ -1,0 +1,2 @@
+[console_scripts]
+pocforge = pocforge:main

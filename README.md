@@ -1,7 +1,69 @@
-定位声明：仅用于授权本地靶场
+# PoC-Forge
 
-| #    | 案例                       | 类型          | check 检测信号                            | 确定性依据         |
-| ---- | -------------------------- | ------------- | ----------------------------------------- | ------------------ |
-| 1    | Tomcat PUT(CVE-2017-12615) | 配置错误      | PUT 探针文件 → 201 且读回一致本地靶场实测 |                    |
-| 2    | Log4j2(CVE-2021-44228)     | 输入处理/日志 | 恶意 lookup → 本地监听器收到回连          | 回连信号,100% 确定 |
-| 3    | ThinkPHP5(CNVD-2018-24942) | 框架路由      | 响应中出现 phpinfo 特征串                 | 响应特征,100% 确定 |
+> ⚠️ **仅用于授权本地靶场的漏洞验证框架。禁止对任何未获书面授权的系统使用。**
+> **Plugin-based vulnerability verification CLI for AUTHORIZED local ranges only.**
+
+![demo](docs/demo.gif)
+
+## 这是什么 / What is this
+
+PoC-Forge 是一个插件化漏洞验证 CLI,面向本地隔离靶场:每检测一种漏洞 = 一个插件,统一命令行调用,统一输出"结论 + 证据链"的结构化报告(JSON / Markdown)。
+
+三条设计原则 / Three design principles:
+
+- **插件化 / Pluggable**:新检测插件放入 `plugins/` 目录即自动注册,CLI 零改动;
+- **三态结果模型 / Three-state results**:`VULNERABLE` / `NOT_FOUND` / `INCONCLUSIVE`——"测不了"不冒充"没漏洞",每个结论附带原始证据(响应码、读回内容、回连报文字节);
+- **期望矩阵回归 / Expectation-matrix regression**:4 靶场 × 3 插件 = 12 格期望矩阵,`bash verify.sh` 一键对账;所有检测信号均经本地靶场实测背书。
+
+## 内置插件 / Plugins
+
+| 插件 | 漏洞 | 检测路线 | 证据形态 |
+|------|------|---------|---------|
+| `tomcat_put` | CVE-2017-12615 | 文件落地(无害探针) | PUT 201 + 探针读回一致 |
+| `log4j2_jndi` | CVE-2021-44228 | 回连式 | 目标主动回连 + LDAP BindRequest 字节(`300c...`) |
+| `thinkphp5_invoke` | CNVD-2018-24942 | 响应特征(两级信号) | var_dump 唯一标记回显 / phpinfo 特征 |
+
+## 快速开始 / Quick Start
+
+```bash
+pip install -e .
+pocforge --version
+
+# 启动本地靶场(方法见 docs/ 各分析文档),然后:
+pocforge -t http://localhost:8080,http://localhost:8081,http://localhost:8983,http://localhost:8082 \
+  -p all -o reports/matrix.json
+bash verify.sh    # 期望矩阵一键回归 → REGRESSION OK (12/12)
+```
+
+## 期望矩阵 / Regression Matrix
+
+| 目标 \ 插件 | `tomcat_put` | `log4j2_jndi` | `thinkphp5_invoke` |
+|-------------|:---:|:---:|:---:|
+| Tomcat PUT 靶场 (:8080) | **VULNERABLE** | NOT_FOUND | NOT_FOUND |
+| 干净 Tomcat (:8081) | NOT_FOUND | NOT_FOUND | NOT_FOUND |
+| Log4j2 靶场 (:8983) | NOT_FOUND | **VULNERABLE** | NOT_FOUND |
+| ThinkPHP 靶场 (:8082) | NOT_FOUND | NOT_FOUND | **VULNERABLE** |
+
+对角线即期望:每个靶场只被对应插件命中,其余全部保持沉默。矩阵同时防两个方向的失败——漏报(对角线哑火)与误报(沉默区开火)。
+
+## 文档 / Docs
+
+每篇均含原理链条、**基于本地实测的实验证据**、检测设计取舍与已知限制:
+
+- [CVE-2017-12615 — Tomcat PUT 任意文件写入](docs/cve-2017-12615-analysis.md)(变体矩阵 + Linux 下尾斜杠 JSP 执行实锤)
+- [CVE-2021-44228 — Log4Shell 回连式检测](docs/cve-2021-44228-analysis.md)(LDAP BindRequest 字节级证据)
+- [CNVD-2018-24942 — ThinkPHP5 响应特征检测](docs/cnvd-2018-24942-analysis.md)(两级信号 + 8 变体实测)
+
+## 已知限制 / Limitations
+
+- `log4j2_jndi`:目标容器**出网被禁**时回连不可达 → 漏报(结果 note 与文档已注明);
+- `thinkphp5_invoke`:WAF 拦截 `s=` 参数或报错页差异 → 漏报;
+- 所有插件仅覆盖 check 检测,**不包含利用功能**;目标仅限本地隔离靶场。
+
+## English
+
+**PoC-Forge** is a plugin-based vulnerability verification CLI for local, isolated training ranges only. Each vulnerability check is a plugin; results follow a three-state model (`VULNERABLE` / `NOT_FOUND` / `INCONCLUSIVE`) with raw evidence attached (status codes, read-back probes, even LDAP BindRequest bytes). Ships with 3 plugins covering three detection approaches (harmless file-landing probe, out-of-band callback, response signature) against CVE-2017-12615, CVE-2021-44228 and CNVD-2018-24942. A 12-cell expectation matrix (`bash verify.sh`) guards against both false negatives and false positives. All detection signals are backed by hands-on experiments documented in `docs/`. **Do not use against any system without written authorization.**
+
+## License
+
+MIT — see [LICENSE](LICENSE).
