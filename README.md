@@ -3,8 +3,6 @@
 > ⚠️ **仅用于授权本地靶场的漏洞验证框架。禁止对任何未获书面授权的系统使用。**
 > **Plugin-based vulnerability verification CLI for AUTHORIZED local ranges only.**
 
-![demo](docs/demo.gif)
-
 ## 这是什么 / What is this
 
 PoC-Forge 是一个插件化漏洞验证 CLI,面向本地隔离靶场:每检测一种漏洞 = 一个插件,统一命令行调用,统一输出"结论 + 证据链"的结构化报告(JSON / Markdown)。
@@ -30,7 +28,7 @@ pip install -e .
 pocforge --version
 
 # 启动本地靶场(方法见 docs/ 各分析文档),然后:
-pocforge -t http://localhost:8080,http://localhost:8081,http://localhost:8983,http://localhost:8082 \
+pocforge -t http://localhost:8080,http://localhost:8081,http://localhost:8983,http://localhost:8888 \
   -p all -o reports/matrix.json
 bash verify.sh    # 期望矩阵一键回归 → REGRESSION OK (12/12)
 ```
@@ -42,7 +40,7 @@ bash verify.sh    # 期望矩阵一键回归 → REGRESSION OK (12/12)
 | Tomcat PUT 靶场 (:8080) | **VULNERABLE** | NOT_FOUND | NOT_FOUND |
 | 干净 Tomcat (:8081) | NOT_FOUND | NOT_FOUND | NOT_FOUND |
 | Log4j2 靶场 (:8983) | NOT_FOUND | **VULNERABLE** | NOT_FOUND |
-| ThinkPHP 靶场 (:8082) | NOT_FOUND | NOT_FOUND | **VULNERABLE** |
+| ThinkPHP 靶场 (:8888) | NOT_FOUND | NOT_FOUND | **VULNERABLE** |
 
 对角线即期望:每个靶场只被对应插件命中,其余全部保持沉默。矩阵同时防两个方向的失败——漏报(对角线哑火)与误报(沉默区开火)。
 
